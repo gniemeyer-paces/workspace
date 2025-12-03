@@ -14,7 +14,7 @@ To streamline the release process:
 1.  **Update Version**: Run the `set-version` script to update the version in `package.json` files. The `workspace-server` will now dynamically read its version from its `package.json`.
     ```bash
     npm run set-version <new-version>
-    # Example: npm run set-version 0.0.3
+# Example: npm run set-version 0.0.4
     ```
 
 2.  **Commit Changes**: Commit the version bump and push the changes to `main` (either directly or via a PR).
