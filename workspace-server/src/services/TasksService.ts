@@ -109,16 +109,12 @@ export class TasksService {
   }) => {
     const tasks = await this.authManager.getTasksClient();
     
-    // First, get the existing task to preserve fields not being updated
-    // The patch method exists but acts like update in some versions, 
-    // safer to do a get-modify-update pattern or use patch if confident.
-    // Tasks API patch semantics are standard. Let's use patch.
-    
-    const requestBody: tasks_v1.Schema$Task = {};
-    if (params.title !== undefined) requestBody.title = params.title;
-    if (params.notes !== undefined) requestBody.notes = params.notes;
-    if (params.status !== undefined) requestBody.status = params.status;
-    if (params.due !== undefined) requestBody.due = params.due;
+    const requestBody: tasks_v1.Schema$Task = {
+      ...(params.title !== undefined && { title: params.title }),
+      ...(params.notes !== undefined && { notes: params.notes }),
+      ...(params.status !== undefined && { status: params.status }),
+      ...(params.due !== undefined && { due: params.due }),
+    };
 
     const response = await tasks.tasks.patch({
       tasklist: params.taskListId,
