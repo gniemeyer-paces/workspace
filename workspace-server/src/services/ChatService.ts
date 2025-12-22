@@ -99,6 +99,7 @@ export class ChatService {
             const chat = await this.getChatClient();
             const response = await chat.spaces.messages.create({
                 parent: spaceName,
+                messageReplyOption: threadName ? 'REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD' : undefined,
                 requestBody: {
                     text: message,
                     thread: threadName ? { name: threadName } : undefined,
@@ -283,6 +284,7 @@ public getMessages = async ({ spaceName, unreadOnly, pageSize, pageToken, orderB
             // Send the message to the DM space.
             const messageResponse = await chat.spaces.messages.create({
                 parent: spaceName,
+                messageReplyOption: threadName ? 'REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD' : undefined,
                 requestBody: {
                     text: message,
                     thread: threadName ? { name: threadName } : undefined,
