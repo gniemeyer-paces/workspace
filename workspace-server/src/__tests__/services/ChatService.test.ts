@@ -154,6 +154,7 @@ describe('ChatService', () => {
 
       expect(mockChatAPI.spaces.messages.create).toHaveBeenCalledWith({
         parent: 'spaces/space1',
+        messageReplyOption: 'REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD',
         requestBody: {
           text: 'Hello in thread!',
           thread: { name: 'spaces/space1/threads/thread1' },
@@ -570,6 +571,7 @@ describe('ChatService', () => {
 
       expect(mockChatAPI.spaces.messages.create).toHaveBeenCalledWith({
         parent: 'spaces/dm123',
+        messageReplyOption: 'REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD',
         requestBody: {
           text: 'Hello again!',
           thread: { name: 'spaces/dm123/threads/thread1' },
