@@ -1,0 +1,131 @@
+#!/bin/bash
+
+# GCP Setup Script for Google Workspace Extension
+# This script enables necessary APIs and helps set up Secret Manager and Cloud Functions.
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${YELLOW}Starting Google Cloud Platform setup...${NC}"
+
+# Check if gcloud is installed
+if ! command -v gcloud &> /dev/null; then
+    echo -e "${RED}Error: gcloud CLI is not installed. Please install it first.${NC}"
+    exit 1
+fi
+
+# Get current project ID
+PROJECT_ID=$(gcloud config get-value project)
+if [ -z "$PROJECT_ID" ]; then
+    echo -e "${RED}Error: No Google Cloud project is currently set.${NC}"
+    echo "Please run: gcloud config set project [PROJECT_ID]"
+    exit 1
+fi
+
+echo -e "Using project: ${GREEN}$PROJECT_ID${NC}"
+
+# 1. Enable Required APIs
+echo -e "\n${YELLOW}Step 1: Enabling Required APIs...${NC}"
+APIS=(
+    "drive.googleapis.com"
+    "docs.googleapis.com"
+    "calendar-json.googleapis.com"
+    "chat.googleapis.com"
+    "gmail.googleapis.com"
+    "people.googleapis.com"
+    "slides.googleapis.com"
+    "sheets.googleapis.com"
+    "admin.googleapis.com"
+    "secretmanager.googleapis.com"
+    "cloudfunctions.googleapis.com"
+    "cloudbuild.googleapis.com"
+)
+
+for api in "${APIS[@]}"; do
+    echo "Enabling $api..."
+    gcloud services enable "$api"
+done
+
+echo -e "${GREEN}APIs enabled successfully.${NC}"
+
+# 2. Setup Secret Manager
+echo -e "\n${YELLOW}Step 2: Setting up Secret Manager...${NC}"
+SECRET_ID="workspace-oauth-client-secret"
+
+if gcloud secrets describe "$SECRET_ID" &> /dev/null; then
+    echo "Secret $SECRET_ID already exists."
+else
+    echo "Creating secret $SECRET_ID..."
+    gcloud secrets create "$SECRET_ID" --replication-policy=\"automatic\"
+fi
+
+echo -e "${YELLOW}Please enter your OAuth 2.0 Client Secret (from Google Cloud Console):${NC}"
+read -s CLIENT_SECRET
+echo "$CLIENT_SECRET" | gcloud secrets versions add "$SECRET_ID" --data-file=-
+
+echo -e "${GREEN}Secret stored successfully.${NC}"
+
+# 3. Deploy Cloud Function
+echo -e "\n${YELLOW}Step 3: Deploying Cloud Function...${NC}"
+echo -e "${YELLOW}Please enter the OAuth 2.0 Client ID:${NC}"
+read CLIENT_ID
+
+REGION="us-central1" # You can change this
+FUNCTION_NAME="workspace-oauth-handler"
+
+# We need the function URL before deployment to set REDIRECT_URI, 
+# but we can also use a placeholder and update it after.
+# Or better, construct it if we know the naming convention.
+# For 2nd gen functions, it's https://[REGION]-[PROJECT_ID].cloudfunctions.net/[FUNCTION_NAME]
+# But let's just deploy it and then update if needed.
+
+echo "Deploying Cloud Function..."
+gcloud functions deploy "$FUNCTION_NAME" \
+    --gen2 \
+    --runtime=nodejs20 \
+    --region="$REGION" \
+    --source="./cloud_function" \
+    --entry-point=oauthHandler \
+    --trigger-http \
+    --allow-unauthenticated \
+    --set-env-vars "CLIENT_ID=$CLIENT_ID,SECRET_NAME=projects/$PROJECT_ID/secrets/$SECRET_ID/versions/latest"
+
+# Get the URL of the deployed function
+FUNCTION_URL=$(gcloud functions describe "$FUNCTION_NAME" --region="$REGION" --format='value(serviceConfig.uri)')
+
+echo -e "${GREEN}Cloud Function deployed at: $FUNCTION_URL${NC}"
+
+# Update REDIRECT_URI env var now that we have the URL
+echo "Updating REDIRECT_URI environment variable..."
+gcloud functions deploy "$FUNCTION_NAME" \
+    --gen2 \
+    --region="$REGION" \
+    --update-env-vars "REDIRECT_URI=$FUNCTION_URL"
+
+# 4. Grant Permissions
+echo -e "\n${YELLOW}Step 4: Granting Secret Manager Access to Cloud Function...${NC}"
+# Get the service account used by the Cloud Function
+SERVICE_ACCOUNT=$(gcloud functions describe "$FUNCTION_NAME" --region="$REGION" --format='value(serviceConfig.serviceAccountEmail)')
+
+gcloud secrets add-iam-policy-binding "$SECRET_ID" \
+    --member="serviceAccount:$SERVICE_ACCOUNT" \
+    --role="roles/secretmanager.secretAccessor"
+
+echo -e "${GREEN}Permissions granted successfully.${NC}"
+
+echo -e "\n${GREEN}GCP Setup Complete!${NC}"
+echo -e "---------------------------------------------------"
+echo -e "${YELLOW}Next Steps:${NC}"
+echo "1. Go to Google Cloud Console > APIs & Services > Credentials."
+echo "2. Edit your OAuth 2.0 Client ID."
+echo "3. Add the following to 'Authorized redirect URIs':"
+echo -e "   ${GREEN}$FUNCTION_URL${NC}"
+echo "4. Set the following environment variables in your local environment:"
+echo -e "   ${GREEN}export WORKSPACE_CLIENT_ID=\"$CLIENT_ID\"${NC}" 
+echo -e "   ${GREEN}export WORKSPACE_CLOUD_FUNCTION_URL=\"$FUNCTION_URL\"${NC}"
+echo -e "---------------------------------------------------"
