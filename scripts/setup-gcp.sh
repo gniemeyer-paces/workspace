@@ -75,7 +75,12 @@ echo -e "\n${YELLOW}Step 3: Deploying Cloud Function...${NC}"
 echo -e "${YELLOW}Please enter the OAuth 2.0 Client ID:${NC}"
 read CLIENT_ID
 
-REGION="us-central1" # You can change this
+echo -e "${YELLOW}Please enter the GCP region for your Cloud Function (e.g., us-central1):${NC}"
+read REGION
+if [ -z "$REGION" ]; then
+    REGION="us-central1"
+    echo -e "${YELLOW}No region entered, defaulting to $REGION.${NC}"
+fi
 FUNCTION_NAME="workspace-oauth-handler"
 FUNCTION_URL="https://${REGION}-${PROJECT_ID}.cloudfunctions.net/${FUNCTION_NAME}"
 
