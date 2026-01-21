@@ -77,12 +77,18 @@ read CLIENT_ID
 
 REGION="us-central1" # You can change this
 FUNCTION_NAME="workspace-oauth-handler"
+FUNCTION_URL="https://${REGION}-${PROJECT_ID}.cloudfunctions.net/${FUNCTION_NAME}"
 
-# We need the function URL before deployment to set REDIRECT_URI, 
-# but we can also use a placeholder and update it after.
-# Or better, construct it if we know the naming convention.
-# For 2nd gen functions, it's https://[REGION]-[PROJECT_ID].cloudfunctions.net/[FUNCTION_NAME]
-# But let's just deploy it and then update if needed.
+echo "Deploying Cloud Function..."
+gcloud functions deploy "$FUNCTION_NAME" \
+    --gen2 \
+    --runtime=nodejs20 \
+    --region="$REGION" \
+    --source="./cloud_function" \
+    --entry-point=oauthHandler \
+    --trigger-http \
+    --allow-unauthenticated \
+    --set-env-vars "CLIENT_ID=$CLIENT_ID,SECRET_NAME=projects/$PROJECT_ID/secrets/$SECRET_ID/versions/latest,REDIRECT_URI=$FUNCTION_URL"
 
 echo "Deploying Cloud Function..."
 gcloud functions deploy "$FUNCTION_NAME" \
