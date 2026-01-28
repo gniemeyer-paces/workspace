@@ -162,7 +162,7 @@ async function main() {
     server.registerTool(
         "drive.findFolder",
         {
-            description: 'Finds a folder by name in Google Drive.',
+            description: 'Finds a folder by name in Google Drive, including shared drives (Team Drives).',
             inputSchema: {
                 folderName: z.string().describe('The name of the folder to find.'),
             }
@@ -340,12 +340,12 @@ async function main() {
     server.registerTool(
         "drive.search",
         {
-            description: 'Searches for files and folders in Google Drive. The query can be a simple search term, a Google Drive URL, or a full query string. For more information on query strings see: https://developers.google.com/drive/api/guides/search-files',
+            description: 'Searches for files and folders in Google Drive, including shared drives (Team Drives). The query can be a simple search term, a Google Drive URL, or a full query string. For more information on query strings see: https://developers.google.com/drive/api/guides/search-files',
             inputSchema: {
-                query: z.string().optional().describe('A simple search term (e.g., "Budget Q3"), a Google Drive URL, or a full query string (e.g., "name contains \'Budget\' and owners in \'user@example.com\'").'),
+                query: z.string().optional().describe('A simple search term (e.g., "Budget Q3"), a Google Drive URL, or a full query string (e.g., "name contains \'Budget\' and owners in \'user@example.com\'"). Use "\'<folder-id>\' in parents" to list folder contents.'),
                 pageSize: z.number().optional().describe('The maximum number of results to return.'),
                 pageToken: z.string().optional().describe('The token for the next page of results.'),
-                corpus: z.string().optional().describe('The corpus of files to search (e.g., "user", "domain").'),
+                corpus: z.string().optional().describe('The corpus of files to search. Use "domain" to search shared drives across the organization. Use "user" (default) for personal Drive only.'),
                 unreadOnly: z.boolean().optional().describe('Whether to filter for unread files only.'),
                 sharedWithMe: z.boolean().optional().describe('Whether to search for files shared with the user.'),
             }
@@ -356,7 +356,7 @@ async function main() {
     server.registerTool(
         "drive.downloadFile",
         {
-            description: 'Downloads the content of a file from Google Drive to a local path. Note: Google Docs, Sheets, and Slides require specialized handling.',
+            description: 'Downloads the content of a file from Google Drive (including shared drives) to a local path. Note: Google Docs, Sheets, and Slides require specialized handling.',
             inputSchema: {
                 fileId: z.string().describe('The ID of the file to download.'),
                 localPath: z.string().describe('The local file path where the content should be saved (e.g., "downloads/report.pdf").'),
