@@ -45,6 +45,8 @@ export class DriveService {
                 q: query,
                 fields: 'files(id, name)',
                 spaces: 'drive',
+                supportsAllDrives: true,
+                includeItemsFromAllDrives: true,
             });
 
             const folders = res.data.files || [];
@@ -137,7 +139,7 @@ export class DriveService {
 
                 if (urlType === 'unknown') {
                     try {
-                        const file = await drive.files.get({ fileId, fields: 'mimeType' });
+                        const file = await drive.files.get({ fileId, fields: 'mimeType', supportsAllDrives: true });
                         if (file.data.mimeType === 'application/vnd.google-apps.folder') {
                             isFolder = true;
                         }
@@ -155,6 +157,7 @@ export class DriveService {
                         const res = await drive.files.get({
                             fileId: fileId,
                             fields: 'id, name, modifiedTime, viewedByMeTime, mimeType, parents',
+                            supportsAllDrives: true,
                         });
                         return {
                             content: [{
@@ -240,6 +243,8 @@ export class DriveService {
                 pageToken: pageToken,
                 corpus: corpus as 'user' | 'domain' | undefined,
                 fields: 'nextPageToken, files(id, name, modifiedTime, viewedByMeTime, mimeType, parents)',
+                supportsAllDrives: true,
+                includeItemsFromAllDrives: true,
             });
 
             let files = res.data.files || [];
@@ -284,6 +289,7 @@ export class DriveService {
             const metadata = await drive.files.get({
                 fileId: fileId,
                 fields: 'id, name, mimeType',
+                supportsAllDrives: true,
             });
             const mimeType = metadata.data.mimeType || '';
 
@@ -316,6 +322,7 @@ export class DriveService {
             const response = await drive.files.get({
                 fileId: fileId,
                 alt: 'media',
+                supportsAllDrives: true,
             }, { responseType: 'arraybuffer' });
 
             const buffer = Buffer.from(response.data as unknown as ArrayBuffer);
